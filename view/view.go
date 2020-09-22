@@ -33,12 +33,6 @@ type RestViewer interface {
 	// after call your handle
 	Finish(ctx *gin.Context)
 
-	Get(ctx *gin.Context)
-	Post(ctx *gin.Context)
-	Put(ctx *gin.Context)
-	Patch(ctx *gin.Context)
-	Delete(ctx *gin.Context)
-
 	IsAllowRequest(ctx *gin.Context) bool
 
 	HandleError(ctx *gin.Context, err interface{})
@@ -52,22 +46,6 @@ func (b *RestView) Finish(ctx *gin.Context) {}
 
 func (b *RestView) IsAllowRequest(ctx *gin.Context) bool {
 	return true
-}
-
-func (b *RestView) Get(ctx *gin.Context) {
-	MethodNotAllowedHandleFunc(ctx)
-}
-func (b *RestView) Post(ctx *gin.Context) {
-	MethodNotAllowedHandleFunc(ctx)
-}
-func (b *RestView) Put(ctx *gin.Context) {
-	MethodNotAllowedHandleFunc(ctx)
-}
-func (b *RestView) Patch(ctx *gin.Context) {
-	MethodNotAllowedHandleFunc(ctx)
-}
-func (b *RestView) Delete(ctx *gin.Context) {
-	MethodNotAllowedHandleFunc(ctx)
 }
 
 func (b *RestView) HandleError(ctx *gin.Context, err interface{}) {
