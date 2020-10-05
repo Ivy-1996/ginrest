@@ -2,31 +2,7 @@ package view
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
-
-var (
-	methodNotAllowedResponseBody = []byte("Method Not Allowed")
-	forbiddenResponseBody        = []byte("403 Forbidden")
-)
-
-// Change default MethodNotAllowed tips
-func SetMethodNotAllowedBody(body []byte) {
-	methodNotAllowedResponseBody = body
-}
-
-// Change default Forbidden tips
-func SetForbiddenResponseBody(body []byte) {
-	forbiddenResponseBody = body
-}
-
-func MethodNotAllowedHandleFunc(ctx *gin.Context) {
-	ctx.String(http.StatusMethodNotAllowed, string(methodNotAllowedResponseBody))
-}
-
-func ForbiddenHandleFunc(ctx *gin.Context) {
-	ctx.String(http.StatusForbidden, string(forbiddenResponseBody))
-}
 
 // Abstract RestViewer
 type RestViewer interface {
@@ -42,6 +18,15 @@ type RestViewer interface {
 
 	// Implement this method to handle panic error
 	HandleError(ctx *gin.Context, err interface{})
+
+	// Perform authentication on the incoming request.
+	PerformAuthentication(ctx *gin.Context)
+
+	// Check if the request should be permitted.
+	CheckPermissions(ctx *gin.Context)
+
+	// Check if request should be throttled.
+	CheckThrottles(ctx *gin.Context)
 }
 
 // Base RestViewer implement
@@ -70,30 +55,14 @@ func (b *RestView) HandleError(ctx *gin.Context, err interface{}) {
 	panic(err)
 }
 
+// Implement RestViewer
+// Overwrite to your own idea
+func (b *RestView) PerformAuthentication(ctx *gin.Context) {}
 
+// Implement RestViewer
+// Overwrite to your own idea
+func (b *RestView) CheckPermissions(ctx *gin.Context) {}
 
-type TemplateViewer interface {
-	RestViewer
-	GetTemplateName(ctx *gin.Context) string
-	GetTemplateContext(ctx *gin.Context) interface{}
-}
-
-// Template view
-type TemplateView struct {
-	RestView
-}
-
-// Overwrite this method
-// Return your template name
-func (t *TemplateView) GetTemplateName(ctx *gin.Context) string {
-	panic("implement me")
-}
-
-// Set template Context
-func (t *TemplateView) GetTemplateContext(ctx *gin.Context) interface{} {
-	return nil
-}
-
-func (t *TemplateView) Get(ctx *gin.Context) {
-	panic("implement me")
-}
+// Implement RestViewer
+// Overwrite to your own idea
+func (b *RestView) CheckThrottles(ctx *gin.Context) {}
