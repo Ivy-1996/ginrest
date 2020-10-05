@@ -1,9 +1,12 @@
 ## ginrest
 
-Easy and simple to use
 
+## Getting started
+```shell
+go get github.com/Ivy-1996/ginrest
+```
 
-## Example
+## A Simple Example
 
 ```go
 package main
