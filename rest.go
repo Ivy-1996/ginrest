@@ -23,6 +23,6 @@ func AsDefaultHandleFunc(r view.RestViewer) gin.HandlerFunc {
 }
 
 // Shortcut for router.NewDefaultRouter
-func NewDefaultRouter(engine *gin.Engine) *router.DefaultRouter {
-	return router.NewDefaultRouter(engine)
+func NewRouter(engine *gin.Engine, middleware ...gin.HandlerFunc) *router.Router {
+	return router.NewRouter(engine, middleware...)
 }
