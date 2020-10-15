@@ -79,11 +79,10 @@ func (va *validator) RunValidators(i interface{}) ValidateError {
 
 		methodName := fmt.Sprintf("Validate%s", field.Name)
 
-		if method, ok := _type.MethodByName(methodName); ok {
-
+		if method := _value.MethodByName(methodName); method.IsValid() {
 			delete(tagMap, field.Name)
 
-			err := method.Func.Call([]reflect.Value{})[0]
+			err := method.Call([]reflect.Value{})[0]
 
 			if !err.IsNil() {
 
