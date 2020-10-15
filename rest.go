@@ -26,3 +26,4 @@ func AsDefaultHandleFunc(r view.RestViewer) gin.HandlerFunc {
 func NewRouter(engine *gin.Engine, middleware ...gin.HandlerFunc) *router.Router {
 	return router.NewRouter(engine, middleware...)
 }
+
