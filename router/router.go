@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ivy-1996/ginrest/core"
+	"github.com/ivy-1996/ginrest/http"
 	"github.com/ivy-1996/ginrest/view"
 )
 
@@ -46,7 +46,7 @@ func (r *Router) Register(path string, v view.RestViewer, middleware ...gin.Hand
 	r.prepare()
 
 	// private middleware use
-	handlers := append(middleware, core.AsHandlerFunc(v, r.restViewHandlerFunc))
+	handlers := append(middleware, http.AsHandlerFunc(v, r.restViewHandlerFunc))
 
 	// register done
 	r.group.Any(path, handlers...)

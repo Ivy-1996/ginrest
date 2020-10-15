@@ -2,14 +2,14 @@ package ginrest
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ivy-1996/ginrest/core"
+	"github.com/ivy-1996/ginrest/http"
 	"github.com/ivy-1996/ginrest/router"
 	"github.com/ivy-1996/ginrest/view"
 )
 
-// Shortcut for core.AsHandlerFunc
+// Shortcut for http.AsHandlerFunc
 func AsHandlerFunc(r view.RestViewer, restHandlerFunc view.RestViewHandlerFunc) gin.HandlerFunc {
-	return core.AsHandlerFunc(r, restHandlerFunc)
+	return http.AsHandlerFunc(r, restHandlerFunc)
 }
 
 // Shortcut for view.SimpleRestViewFunc
