@@ -5,17 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 const empty = ""
-
-// ValidateLibrary interface
-type ValidateLibrary interface {
-	Register(key string, validateFunc ValidateFunc)
-	Validate(field reflect.Value, arg map[string][]string) map[string]string
-	LookForValidateFunc(key string) ValidateFunc
-}
 
 // Implement ValidateLibrary
 type SimpleValidateLibrary map[string]ValidateFunc
@@ -41,39 +33,29 @@ func (s SimpleValidateLibrary) Register(key string, validateFunc ValidateFunc) {
 }
 
 // Validate field if is legal
-func (s SimpleValidateLibrary) Validate(field reflect.Value, arg map[string][]string) map[string]string {
+func (s SimpleValidateLibrary) Validate(field reflect.Value, node *validatorNode) ValidateErrorNodes {
 
-	var errData map[string]string
+	var validateNodes ValidateErrorNodes
 
-	for _, v := range arg {
+	for _, rule := range node.Rules {
 
-		for _, tag := range v {
+		validateFunc := s.LookForValidateFunc(rule.Name)
 
-			item := strings.Split(tag, ":")
-
-			if len(item) != 3 {
-				panic(errors.New("wrong tag style, example: `gt:10:must great than 10`"))
+		if err := validateFunc(field, rule); err != nil {
+			if validateNodes == nil {
+				validateNodes = make(ValidateErrorNodes, 0)
 			}
-
-			validateFunc := s.LookForValidateFunc(item[0])
-
-			if err := validateFunc(field, item); err != nil {
-
-				if errData == nil {
-					errData = make(map[string]string, 0)
-				}
-
-				errData[item[0]] = err.Error()
-			}
+			validateNode := NewValidateErrorNode(rule.Name, err.Error())
+			validateNodes = append(validateNodes, validateNode)
 		}
 	}
+	return validateNodes
 
-	return errData
 }
 
 var simpleValidateLibrary SimpleValidateLibrary
 
-func required(field reflect.Value, s []string) error {
+func required(field reflect.Value, rule *validatorRule) error {
 
 	lambda := func(f reflect.Value) bool {
 		// todo add more type support here
@@ -90,7 +72,7 @@ func required(field reflect.Value, s []string) error {
 	}
 
 	if !lambda(field) {
-		return errors.New(s[2])
+		return errors.New(rule.ErrorMessage)
 	}
 	return nil
 }
@@ -103,55 +85,55 @@ func parseInt(s string) int {
 	return expect
 }
 
-func gt(field reflect.Value, s []string) error {
+func gt(field reflect.Value, rule *validatorRule) error {
 	kink := field.Kind()
 	if 2 <= kink && kink <= 14 {
-		expect := parseInt(s[1])
+		expect := parseInt(rule.Expect)
 		if field.Int() > int64(expect) {
 			return nil
 		} else {
-			return errors.New(s[2])
+			return errors.New(rule.ErrorMessage)
 		}
 	} else {
-		return errors.New(s[2])
+		return errors.New(rule.ErrorMessage)
 	}
 }
 
-func lt(field reflect.Value, s []string) error {
+func lt(field reflect.Value, rule *validatorRule) error {
 	kink := field.Kind()
 	if 2 <= kink && kink <= 14 {
-		expect := parseInt(s[1])
+		expect := parseInt(rule.Expect)
 		if field.Int() < int64(expect) {
 			return nil
 		} else {
-			return errors.New(s[2])
+			return errors.New(rule.ErrorMessage)
 		}
 	} else {
-		return errors.New(s[2])
+		return errors.New(rule.ErrorMessage)
 	}
 }
 
-func email(field reflect.Value, s []string) error {
+func email(field reflect.Value, rule *validatorRule) error {
 	switch field.Kind() {
 	case reflect.String:
 		if EmailRequired(field.String()) {
 			return nil
 		}
-		return errors.New(s[2])
+		return errors.New(rule.ErrorMessage)
 	default:
-		return errors.New(s[2])
+		return errors.New(rule.ErrorMessage)
 	}
 }
 
-func uuid(field reflect.Value, s []string) error {
+func uuid(field reflect.Value, rule *validatorRule) error {
 	switch field.Kind() {
 	case reflect.String:
 		if UuidRequired(field.String()) {
 			return nil
 		}
-		return errors.New(s[2])
+		return errors.New(rule.ErrorMessage)
 	default:
-		return errors.New(s[2])
+		return errors.New(rule.ErrorMessage)
 	}
 }
 
@@ -159,7 +141,7 @@ func init() {
 	simpleValidateLibrary = make(map[string]ValidateFunc, 0)
 	simpleValidateLibrary.Register("required", required)
 	simpleValidateLibrary.Register("gt", gt)
-	simpleValidateLibrary.Register("lt", gt)
+	simpleValidateLibrary.Register("lt", lt)
 	simpleValidateLibrary.Register("email", email)
 	simpleValidateLibrary.Register("uuid", uuid)
 }

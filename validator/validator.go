@@ -11,6 +11,7 @@ const (
 	validateTag            = "validate"
 	validateTagSplitString = ";"
 	validateLabelTag       = "label"
+	conditionSplitTag      = ":"
 )
 
 // Constructor for validator
@@ -66,13 +67,15 @@ func (va *validator) SetValidateLabelTag(validateLabelTag string) {
 	va.validateLabelTag = validateLabelTag
 }
 
-// Get validateTag value from struct
+// Get ValidatorNotes from struct
 // You can call SetValidateTag to change tag name
-func (va *validator) getTagMap(value reflect.Type) map[string][]string {
+func (va *validator) getValidatorNotes(value reflect.Type) validatorNodes {
 
-	result := map[string][]string{}
+	var nodes validatorNodes
 
 	for i := 0; i < value.NumField(); i++ {
+
+		var rules validatorRules
 
 		// Get current field
 		field := value.Field(i)
@@ -85,19 +88,41 @@ func (va *validator) getTagMap(value reflect.Type) map[string][]string {
 		if tagString == empty {
 			continue
 		}
-
 		// Get different condition by validateSplitTag
 		tagSlice := strings.Split(tagString, va.validateSplitTag)
 
-		// Add it to result
-		result[field.Name] = tagSlice
+		for _, tag := range tagSlice {
+
+			ruleAttrSlice := strings.Split(tag, conditionSplitTag)
+
+			if len(ruleAttrSlice) != 3 {
+				panic(`wrong tag style, example: gt:10:your value must greater than 10`)
+			}
+
+			name, expect, errMessage := ruleAttrSlice[0], ruleAttrSlice[1], ruleAttrSlice[2]
+
+			rule := newValidatorRule(name, expect, errMessage)
+
+			if rules == nil {
+				rules = make(validatorRules, 0)
+			}
+
+			rules = append(rules, rule)
+		}
+
+		if nodes == nil {
+			nodes = make(validatorNodes, 0)
+		}
+
+		node := newValidatorNote(field.Name, rules)
+
+		nodes = append(nodes, node)
 	}
 
-	return result
+	return nodes
 }
 
-// Implement Validator
-func (va *validator) RunValidators(i interface{}) ValidateError {
+func (va *validator) RunValidators(i interface{}) ValidateErrors {
 
 	// Set some value default
 	va.prepare()
@@ -107,10 +132,10 @@ func (va *validator) RunValidators(i interface{}) ValidateError {
 
 	_type := reflect.TypeOf(i)
 
-	// TagMap or Condition ?
-	tagMap := va.getTagMap(_type)
+	// Get rules nodes
+	nodes := va.getValidatorNotes(_type)
 
-	var result ValidateError
+	var validateErrors ValidateErrors
 
 	// Try to get validate function if we want validate field by ourselves
 	for i := 0; i < _type.NumField(); i++ {
@@ -124,29 +149,29 @@ func (va *validator) RunValidators(i interface{}) ValidateError {
 		// If we found and it is valid
 		if method := _value.MethodByName(methodName); method.IsValid() {
 
-			// Delete it from tagMap
-			delete(tagMap, field.Name)
+			// Remove it from nodes
+			nodes = RemoveNodeByName(nodes, field.Name)
 
 			// Get validate function return value
-			// Note: validate function must return a single value and it must be map[string]string type
+			// Note: validate function must return a single value and it must be ValidateNode
 			err := method.Call([]reflect.Value{})[0]
 
-			// We can call `IsNil` because it is a map
+			// We can call `IsNil` because it is a struct
 			// Pass this field if it return nil
 			if !err.IsNil() {
 
 				// Try to translate it to `map[string]string` type
-				if item, ok := err.Interface().(map[string]string); !ok {
+				if validateErrorNodes, ok := err.Interface().(*ValidateErrorNodes); !ok {
 
 					// But we failed
-					errString := fmt.Sprintf("func `%s` must return `map[string]string` type", methodName)
+					errString := fmt.Sprintf("func `%s` must return `*ValidateErrorNodes` type", methodName)
 
 					panic(errors.New(errString))
 
-				} else if item != nil {
+				} else if validateErrorNodes != nil {
 
-					if result == nil {
-						result = make(ValidateError, 0)
+					if validateErrors == nil {
+						validateErrors = make(ValidateErrors, 0)
 					}
 
 					// Try to get label from field
@@ -156,40 +181,73 @@ func (va *validator) RunValidators(i interface{}) ValidateError {
 					if label == empty {
 						label = field.Name
 					}
-
+					validateError := NewValidateError(field.Name, validateErrorNodes)
 					// Add it to result
-					result[label] = item
+					validateErrors = append(validateErrors, validateError)
 				}
 			}
 		}
 	}
 
 	// Now it is time to validate by validateLibrary
-	for k, v := range tagMap {
+	for _, node := range nodes {
 
 		// Get current field
 		// It must be exist, so ignore if it exist
-		field, _ := _type.FieldByName(k)
+		field, _ := _type.FieldByName(node.FieldName)
 
 		label := field.Tag.Get(va.validateLabelTag)
 
 		if label == empty {
-			label = k
+			label = node.FieldName
 		}
 
 		// Validate it by validateLibrary
 		// Pass this field if it return nil, otherwise add it to result
-		item := va.validateLibrary.Validate(_value.FieldByName(k), map[string][]string{k: v})
+		validateErrorNodes := va.validateLibrary.Validate(_value.FieldByName(node.FieldName), node)
 
-		if item != nil {
+		if validateErrorNodes != nil {
 
-			if result == nil {
-				result = make(ValidateError, 0)
+			if validateErrors == nil {
+				validateErrors = make(ValidateErrors, 0)
 			}
-
-			result[label] = item
+			validateError := NewValidateError(node.FieldName, &validateErrorNodes)
+			validateErrors = append(validateErrors, validateError)
 		}
 	}
 
-	return result
+	return validateErrors
+}
+
+type validatorRule struct {
+	Name         string
+	Expect       string
+	ErrorMessage string
+}
+
+func newValidatorRule(name string, expect string, errorMessage string) *validatorRule {
+	return &validatorRule{Name: name, Expect: expect, ErrorMessage: errorMessage}
+}
+
+type validatorRules []*validatorRule
+
+type validatorNode struct {
+	FieldName string
+	Rules     validatorRules
+}
+
+func newValidatorNote(fieldName string, rules validatorRules) *validatorNode {
+	return &validatorNode{FieldName: fieldName, Rules: rules}
+}
+
+type validatorNodes []*validatorNode
+
+func RemoveNodeByName(nodes validatorNodes, name string) validatorNodes {
+	for index, node := range nodes {
+		if node.FieldName == name {
+			nodes := append(nodes[:index], nodes[index+1:]...)
+			return nodes
+		}
+	}
+	return nodes
 }
