@@ -34,11 +34,11 @@ func NewValidator() *validator {
 	return &validator{}
 }
 
-func (v *validator) SetValidateLibrary(validateLibrary ValidateLibrary) {
-	v.validateLibrary = validateLibrary
+func (va *validator) SetValidateLibrary(validateLibrary ValidateLibrary) {
+	va.validateLibrary = validateLibrary
 }
 
-func (v *validator) getTagMap(value reflect.Type) map[string][]string {
+func (va *validator) getTagMap(value reflect.Type) map[string][]string {
 
 	result := map[string][]string{}
 
@@ -83,7 +83,7 @@ func (va *validator) RunValidators(i interface{}) ValidateError {
 
 			delete(tagMap, field.Name)
 
-			err := method.Func.Call([]reflect.Value{_value.FieldByName(field.Name)})[0]
+			err := method.Func.Call([]reflect.Value{})[0]
 
 			if !err.IsNil() {
 
