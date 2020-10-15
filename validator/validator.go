@@ -3,6 +3,7 @@ package validator
 import (
 	"errors"
 	"fmt"
+	jsoniter "github.com/json-iterator/go"
 	"reflect"
 	"strings"
 )
@@ -12,6 +13,18 @@ const (
 	validateTagSplitString = ";"
 	validateLabelTag       = "label"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+type ValidateError map[string]map[string]string
+
+func (v ValidateError) Error() string {
+	if b, err := json.Marshal(v); err != nil {
+		panic(err)
+	} else {
+		return string(b)
+	}
+}
 
 type validator struct {
 	validateLibrary ValidateLibrary
@@ -46,7 +59,7 @@ func (v *validator) getTagMap(value reflect.Type) map[string][]string {
 	return result
 }
 
-func (va *validator) RunValidators(i interface{}) map[string]map[string]string {
+func (va *validator) RunValidators(i interface{}) ValidateError {
 
 	if va.validateLibrary == nil {
 		va.validateLibrary = simpleValidateLibrary
@@ -58,7 +71,7 @@ func (va *validator) RunValidators(i interface{}) map[string]map[string]string {
 
 	tagMap := va.getTagMap(_type)
 
-	var result map[string]map[string]string
+	var result ValidateError
 
 	for i := 0; i < _type.NumField(); i++ {
 
@@ -83,7 +96,7 @@ func (va *validator) RunValidators(i interface{}) map[string]map[string]string {
 				} else if item != nil {
 
 					if result == nil {
-						result = make(map[string]map[string]string, 0)
+						result = make(ValidateError, 0)
 					}
 
 					label := field.Tag.Get(validateLabelTag)
@@ -109,7 +122,7 @@ func (va *validator) RunValidators(i interface{}) map[string]map[string]string {
 		if item != nil {
 
 			if result == nil {
-				result = make(map[string]map[string]string, 0)
+				result = make(ValidateError, 0)
 			}
 
 			result[label] = item
