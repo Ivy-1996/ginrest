@@ -60,6 +60,40 @@ func (va *validator) RunValidators(i interface{}) map[string]map[string]string {
 
 	var result map[string]map[string]string
 
+	for i := 0; i < _type.NumField(); i++ {
+
+		field := _type.Field(i)
+
+		methodName := fmt.Sprintf("Validate%s", field.Name)
+
+		if method, ok := _type.MethodByName(methodName); ok {
+
+			delete(tagMap, field.Name)
+
+			err := method.Func.Call([]reflect.Value{_value.FieldByName(field.Name)})[0]
+
+			if !err.IsNil() {
+
+				if item, ok := err.Interface().(map[string]string); !ok {
+
+					errString := fmt.Sprintf("func `%s` must return `map[string]string` type", methodName)
+
+					panic(errors.New(errString))
+
+				} else if item != nil {
+
+					if result == nil {
+						result = make(map[string]map[string]string, 0)
+					}
+
+					label := field.Tag.Get(validateLabelTag)
+
+					result[label] = item
+				}
+			}
+		}
+	}
+
 	for k, v := range tagMap {
 
 		field, _ := _type.FieldByName(k)
@@ -70,33 +104,7 @@ func (va *validator) RunValidators(i interface{}) map[string]map[string]string {
 			label = k
 		}
 
-		var item map[string]string
-
-		methodName := fmt.Sprintf("Validate%s", k)
-
-		method := _value.MethodByName(methodName)
-
-		if method.IsValid() {
-
-			args := reflect.ValueOf(map[string][]string{k: v})
-
-			err := method.Call([]reflect.Value{args})[0]
-
-			if !err.IsNil() {
-
-				var ok bool
-
-				item, ok = err.Interface().(map[string]string)
-
-				if !ok {
-					errString := fmt.Sprintf("func `%s` must return `map[string]string` type", methodName)
-					panic(errors.New(errString))
-				}
-			}
-
-		} else {
-			item = va.validateLibrary.Validate(_value.FieldByName(k), map[string][]string{k: v})
-		}
+		item := va.validateLibrary.Validate(_value.FieldByName(k), map[string][]string{k: v})
 
 		if item != nil {
 
