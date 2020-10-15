@@ -10,16 +10,18 @@ import (
 
 const empty = ""
 
-type ValidateFunc func(reflect.Value, []string) error
-
+// ValidateLibrary interface
 type ValidateLibrary interface {
 	Register(key string, validateFunc ValidateFunc)
 	Validate(field reflect.Value, arg map[string][]string) map[string]string
 	LookForValidateFunc(key string) ValidateFunc
 }
 
+// Implement ValidateLibrary
 type SimpleValidateLibrary map[string]ValidateFunc
 
+// Get ValidateFunc by key
+// It would course panic if key does not exist
 func (s SimpleValidateLibrary) LookForValidateFunc(key string) ValidateFunc {
 	validateFunc := s[key]
 
@@ -29,6 +31,8 @@ func (s SimpleValidateLibrary) LookForValidateFunc(key string) ValidateFunc {
 	return validateFunc
 }
 
+// Register your ValidateFunc to Library
+// It would course panic if key has already exist
 func (s SimpleValidateLibrary) Register(key string, validateFunc ValidateFunc) {
 	if s[key] != nil {
 		panic(fmt.Sprintf("key `%s` has already exist", key))
@@ -36,6 +40,7 @@ func (s SimpleValidateLibrary) Register(key string, validateFunc ValidateFunc) {
 	s[key] = validateFunc
 }
 
+// Validate field if is legal
 func (s SimpleValidateLibrary) Validate(field reflect.Value, arg map[string][]string) map[string]string {
 
 	var errData map[string]string
