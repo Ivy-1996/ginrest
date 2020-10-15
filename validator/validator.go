@@ -100,6 +100,10 @@ func (va *validator) RunValidators(i interface{}) ValidateError {
 
 					label := field.Tag.Get(validateLabelTag)
 
+					if label == "" {
+						label = field.Name
+					}
+
 					result[label] = item
 				}
 			}
