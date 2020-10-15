@@ -87,12 +87,18 @@ func parseInt(s string) int {
 
 func gt(field reflect.Value, rule *validatorRule) error {
 	kink := field.Kind()
-	if 2 <= kink && kink <= 14 {
-		expect := parseInt(rule.Expect)
+	expect := parseInt(rule.Expect)
+	if reflect.Int <= kink && kink <= reflect.Float64 {
 		if field.Int() > int64(expect) {
 			return nil
 		} else {
 			return errors.New(rule.ErrorMessage)
+		}
+	} else if kink == reflect.String {
+		if len(field.String()) < expect {
+			return errors.New(rule.ErrorMessage)
+		} else {
+			return nil
 		}
 	} else {
 		return errors.New(rule.ErrorMessage)
@@ -101,12 +107,18 @@ func gt(field reflect.Value, rule *validatorRule) error {
 
 func lt(field reflect.Value, rule *validatorRule) error {
 	kink := field.Kind()
-	if 2 <= kink && kink <= 14 {
-		expect := parseInt(rule.Expect)
+	expect := parseInt(rule.Expect)
+	if reflect.Int <= kink && kink <= reflect.Float64 {
 		if field.Int() < int64(expect) {
 			return nil
 		} else {
 			return errors.New(rule.ErrorMessage)
+		}
+	} else if kink == reflect.String {
+		if len(field.String()) > expect {
+			return errors.New(rule.ErrorMessage)
+		} else {
+			return nil
 		}
 	} else {
 		return errors.New(rule.ErrorMessage)
