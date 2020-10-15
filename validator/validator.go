@@ -25,10 +25,12 @@ type validator struct {
 	validateTag      string
 	validateSplitTag string
 	validateLabelTag string
+	_value           reflect.Value
+	_type            reflect.Type
 }
 
 // Prepare for validator
-func (va *validator) prepare() {
+func (va *validator) prepare(i interface{}) {
 	if va.validateTag == empty {
 		va.validateTag = validateTag
 	}
@@ -40,6 +42,17 @@ func (va *validator) prepare() {
 	}
 	if va.validateLabelTag == empty {
 		va.validateLabelTag = validateLabelTag
+	}
+
+	// Get reflect
+	va._value = reflect.ValueOf(i)
+
+	va._type = reflect.TypeOf(i)
+
+	// Add Pointer support
+	if va._type.Kind() == reflect.Ptr {
+		va._type = va._type.Elem()
+		va._value = va._value.Elem()
 	}
 }
 
@@ -69,16 +82,16 @@ func (va *validator) SetValidateLabelTag(validateLabelTag string) {
 
 // Get ValidatorNotes from struct
 // You can call SetValidateTag to change tag name
-func (va *validator) getValidatorNotes(value reflect.Type) validatorNodes {
+func (va *validator) getValidatorNotes() validatorNodes {
 
 	var nodes validatorNodes
 
-	for i := 0; i < value.NumField(); i++ {
+	for i := 0; i < va._type.NumField(); i++ {
 
 		var rules validatorRules
 
 		// Get current field
-		field := value.Field(i)
+		field := va._type.Field(i)
 
 		// Get validateTag value from field
 		tagString := field.Tag.Get(va.validateTag)
@@ -101,7 +114,7 @@ func (va *validator) getValidatorNotes(value reflect.Type) validatorNodes {
 
 			name, expect, errMessage := ruleAttrSlice[0], ruleAttrSlice[1], ruleAttrSlice[2]
 
-			rule := newValidatorRule(name, expect, errMessage)
+			rule := NewValidatorRule(name, expect, errMessage)
 
 			if rules == nil {
 				rules = make(validatorRules, 0)
@@ -114,7 +127,7 @@ func (va *validator) getValidatorNotes(value reflect.Type) validatorNodes {
 			nodes = make(validatorNodes, 0)
 		}
 
-		node := newValidatorNote(field.Name, rules)
+		node := NewValidatorNote(field.Name, rules)
 
 		nodes = append(nodes, node)
 	}
@@ -125,29 +138,26 @@ func (va *validator) getValidatorNotes(value reflect.Type) validatorNodes {
 func (va *validator) RunValidators(i interface{}) ValidateErrors {
 
 	// Set some value default
-	va.prepare()
+	va.prepare(i)
 
 	// Get reflect
-	_value := reflect.ValueOf(i)
-
-	_type := reflect.TypeOf(i)
 
 	// Get rules nodes
-	nodes := va.getValidatorNotes(_type)
+	nodes := va.getValidatorNotes()
 
 	var validateErrors ValidateErrors
 
 	// Try to get validate function if we want validate field by ourselves
-	for i := 0; i < _type.NumField(); i++ {
+	for i := 0; i < va._type.NumField(); i++ {
 
 		// Get current Field
-		field := _type.Field(i)
+		field := va._type.Field(i)
 
 		// Get validate function name
 		methodName := fmt.Sprintf("Validate%s", field.Name)
 
 		// If we found and it is valid
-		if method := _value.MethodByName(methodName); method.IsValid() {
+		if method := va._value.MethodByName(methodName); method.IsValid() {
 
 			// Remove it from nodes
 			nodes = RemoveNodeByName(nodes, field.Name)
@@ -194,7 +204,7 @@ func (va *validator) RunValidators(i interface{}) ValidateErrors {
 
 		// Get current field
 		// It must be exist, so ignore if it exist
-		field, _ := _type.FieldByName(node.FieldName)
+		field, _ := va._type.FieldByName(node.FieldName)
 
 		label := field.Tag.Get(va.validateLabelTag)
 
@@ -204,7 +214,7 @@ func (va *validator) RunValidators(i interface{}) ValidateErrors {
 
 		// Validate it by validateLibrary
 		// Pass this field if it return nil, otherwise add it to result
-		validateErrorNodes := va.validateLibrary.Validate(_value.FieldByName(node.FieldName), node)
+		validateErrorNodes := va.validateLibrary.Validate(va._value.FieldByName(node.FieldName), node)
 
 		if validateErrorNodes != nil {
 
@@ -225,7 +235,7 @@ type validatorRule struct {
 	ErrorMessage string
 }
 
-func newValidatorRule(name string, expect string, errorMessage string) *validatorRule {
+func NewValidatorRule(name string, expect string, errorMessage string) *validatorRule {
 	return &validatorRule{Name: name, Expect: expect, ErrorMessage: errorMessage}
 }
 
@@ -236,7 +246,7 @@ type validatorNode struct {
 	Rules     validatorRules
 }
 
-func newValidatorNote(fieldName string, rules validatorRules) *validatorNode {
+func NewValidatorNote(fieldName string, rules validatorRules) *validatorNode {
 	return &validatorNode{FieldName: fieldName, Rules: rules}
 }
 
