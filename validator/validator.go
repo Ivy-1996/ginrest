@@ -11,6 +11,7 @@ const (
 	validateTag            = "validate"
 	validateTagSplitString = ";"
 	validateLabelTag       = "label"
+	validateFuncPreFix     = "Validate"
 	conditionSplitTag      = ":"
 )
 
@@ -21,12 +22,13 @@ func NewValidator() *validator {
 
 // Implement Validator
 type validator struct {
-	validateLibrary  ValidateLibrary
-	validateTag      string
-	validateSplitTag string
-	validateLabelTag string
-	_value           reflect.Value
-	_type            reflect.Type
+	validateLibrary    ValidateLibrary
+	validateTag        string
+	validateSplitTag   string
+	validateLabelTag   string
+	validateFuncPrefix string
+	_value             reflect.Value
+	_type              reflect.Type
 }
 
 // Prepare for validator
@@ -43,7 +45,9 @@ func (va *validator) prepare(i interface{}) {
 	if va.validateLabelTag == empty {
 		va.validateLabelTag = validateLabelTag
 	}
-
+	if va.validateFuncPrefix == empty {
+		va.validateFuncPrefix = validateFuncPreFix
+	}
 	// Get reflect
 	va._value = reflect.ValueOf(i)
 
@@ -78,6 +82,12 @@ func (va *validator) SetValidateSplitTag(validateSplitTag string) {
 // Call it before RunValidators otherwise it won't be worked
 func (va *validator) SetValidateLabelTag(validateLabelTag string) {
 	va.validateLabelTag = validateLabelTag
+}
+
+// Set validateFuncPrefix with this method
+// Call it before RunValidators otherwise it won't be worked
+func (va *validator) SetValidateFuncPrefix(validateFuncPrefix string) {
+	va.validateFuncPrefix = validateFuncPrefix
 }
 
 // Get ValidatorNotes from struct
@@ -154,7 +164,7 @@ func (va *validator) RunValidators(i interface{}) ValidateErrors {
 		field := va._type.Field(i)
 
 		// Get validate function name
-		methodName := fmt.Sprintf("Validate%s", field.Name)
+		methodName := fmt.Sprintf("%s%s", va.validateFuncPrefix, field.Name)
 
 		// If we found and it is valid
 		if method := va._value.MethodByName(methodName); method.IsValid() {
