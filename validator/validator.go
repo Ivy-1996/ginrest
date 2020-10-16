@@ -240,11 +240,12 @@ func (va *validator) RunValidators(i interface{}) ValidateErrors {
 }
 
 type validatorRule struct {
-	Name         string
-	Expect       string
-	ErrorMessage string
+	Name         string // rule name or library key
+	Expect       string // expect value you want to compare with
+	ErrorMessage string // show error message if validate field no passed
 }
 
+// Constructor for validatorRule
 func NewValidatorRule(name string, expect string, errorMessage string) *validatorRule {
 	return &validatorRule{Name: name, Expect: expect, ErrorMessage: errorMessage}
 }
@@ -252,16 +253,18 @@ func NewValidatorRule(name string, expect string, errorMessage string) *validato
 type validatorRules []*validatorRule
 
 type validatorNode struct {
-	FieldName string
-	Rules     validatorRules
+	FieldName string         // Struct field name
+	Rules     validatorRules // Struct validate rules
 }
 
+// Constructor for validatorNode
 func NewValidatorNote(fieldName string, rules validatorRules) *validatorNode {
 	return &validatorNode{FieldName: fieldName, Rules: rules}
 }
 
 type validatorNodes []*validatorNode
 
+// Remove Node By Name
 func RemoveNodeByName(nodes validatorNodes, name string) validatorNodes {
 	for index, node := range nodes {
 		if node.FieldName == name {
