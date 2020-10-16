@@ -29,3 +29,14 @@ func UuidRequired(key string) gin.HandlerFunc {
 		}
 	}
 }
+
+func LoginRequired(validFunc func(ctx *gin.Context) bool) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		if validFunc(ctx) {
+			ctx.Next()
+		} else {
+			view.NotAuthenticatedHandle(ctx)
+			ctx.Abort()
+		}
+	}
+}
