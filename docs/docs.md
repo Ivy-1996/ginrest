@@ -109,8 +109,8 @@ import (
 )
 
 type A struct {
-	Name string `validate:"gt:10:必须大于10"`
-	Age  int `validate:"gt:10:必须大于10"`
+	Name string `validate:"gt:10:必须大于3"`
+	Age  int    `validate:"gt:10:必须大于10"`
 }
 
 func (a A) ValidateAge() *validator.ValidateErrorNodes {
@@ -127,9 +127,9 @@ func (a A) ValidateAge() *validator.ValidateErrorNodes {
 func main() {
 	validate := validator.NewValidator()
 
-	errData := validate.RunValidators(A{Name: "6", Age: 10})
-	if errData != nil {
-		fmt.Println(errData.Error())
+	err := validate.RunValidators(A{Name: "6", Age: 9})
+	if err != nil {
+		fmt.Println(err.Error())
 	}
 }
 
