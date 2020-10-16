@@ -11,14 +11,12 @@ type A struct {
 }
 
 func (a A) ValidateAge2() *ValidateErrorNodes {
-	validateErrorNodes := make(ValidateErrorNodes, 0)
 	if a.Age2 < 10 {
 		validateErrorNode := NewValidateErrorNode("no_field", "Age2必须大于10")
 		return NewValidateErrorNodes(validateErrorNode)
 	} else if a.Age2 > 20 {
 		validateErrorNode := NewValidateErrorNode("no_field", "Age2必须小于20")
-		validateErrorNodes = append(validateErrorNodes, validateErrorNode)
-		return &validateErrorNodes
+		return NewValidateErrorNodes(validateErrorNode)
 	}
 	return nil
 }
