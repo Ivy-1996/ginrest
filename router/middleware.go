@@ -17,3 +17,15 @@ func InterRequired(key string) gin.HandlerFunc {
 		}
 	}
 }
+
+func UuidRequired(key string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		value, exist := ctx.Params.Get(key)
+		if exist && validator.UuidRequired(value) {
+			ctx.Next()
+		} else {
+			view.PageNotFoundHandle(ctx)
+			ctx.Abort()
+		}
+	}
+}
