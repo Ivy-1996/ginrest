@@ -1,6 +1,6 @@
 # ginrest
 
-> ginrest is simple, helpful , Customizable, realize your idea with it!
+> ginrest is simple, helpful , customizable, realize your idea with it!
 
 [Document](./docs/docs.md)
 
