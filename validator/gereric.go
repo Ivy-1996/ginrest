@@ -39,26 +39,35 @@ func (s SimpleValidateLibrary) Validate(field reflect.Value, node *validatorNode
 
 	for _, rule := range node.Rules {
 
+		// Get validateFunc from library
 		validateFunc := s.LookForValidateFunc(rule.Name)
 
+		// If validated, but no passed
 		if err := validateFunc(field, rule); err != nil {
 			if validateNodes == nil {
 				validateNodes = make(ValidateErrorNodes, 0)
 			}
+			// Create new ErrorNode to validateNodes
 			validateNode := NewValidateErrorNode(rule.Name, err.Error())
 			validateNodes = append(validateNodes, validateNode)
 		}
 	}
+
+	// Return result
+	// if this field passed, validateNodes must be nil type
 	return validateNodes
 
 }
 
 var simpleValidateLibrary SimpleValidateLibrary
 
+// required valid
+// Yeah! just like that
 func required(field reflect.Value, rule *validatorRule) error {
 
-	lambda := func(f reflect.Value) bool {
-		// todo add more type support here
+	isValid := func(f reflect.Value) bool {
+		// todo add more support type here
+		// help!
 		switch field.Kind() {
 		case reflect.Int:
 			return !f.IsZero()
@@ -71,7 +80,7 @@ func required(field reflect.Value, rule *validatorRule) error {
 		}
 	}
 
-	if !lambda(field) {
+	if !isValid(field) {
 		return errors.New(rule.ErrorMessage)
 	}
 	return nil
@@ -85,6 +94,9 @@ func parseInt(s string) int {
 	return expect
 }
 
+// Support int and string only
+// Int: greater than expect
+// String: length of string greater than expect
 func gt(field reflect.Value, rule *validatorRule) error {
 	kink := field.Kind()
 	expect := parseInt(rule.Expect)
@@ -105,6 +117,9 @@ func gt(field reflect.Value, rule *validatorRule) error {
 	}
 }
 
+// Support int and string only
+// Int: lesser than expect
+// String: length of string lesser than expect
 func lt(field reflect.Value, rule *validatorRule) error {
 	kink := field.Kind()
 	expect := parseInt(rule.Expect)
@@ -125,6 +140,8 @@ func lt(field reflect.Value, rule *validatorRule) error {
 	}
 }
 
+// Support string only
+// Check if it is a legal email
 func email(field reflect.Value, rule *validatorRule) error {
 	switch field.Kind() {
 	case reflect.String:
@@ -137,6 +154,8 @@ func email(field reflect.Value, rule *validatorRule) error {
 	}
 }
 
+// Support string only
+// Check if it is a legal uuid
 func uuid(field reflect.Value, rule *validatorRule) error {
 	switch field.Kind() {
 	case reflect.String:
@@ -150,7 +169,7 @@ func uuid(field reflect.Value, rule *validatorRule) error {
 }
 
 func init() {
-	simpleValidateLibrary = make(map[string]ValidateFunc, 0)
+	simpleValidateLibrary = make(SimpleValidateLibrary, 0)
 	simpleValidateLibrary.Register("required", required)
 	simpleValidateLibrary.Register("gt", gt)
 	simpleValidateLibrary.Register("lt", lt)

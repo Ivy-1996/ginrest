@@ -14,10 +14,13 @@ type ValidateLibrary interface {
 	LookForValidateFunc(key string) ValidateFunc
 }
 
+// Validator interface
 type Validator interface {
 	RunValidators(interface{}) ValidateError
 }
 
+// Validate data if it is valid
+// ValidateFunc must register to ValidateLibrary or it won't be worked
 type ValidateFunc func(reflect.Value, *validatorRule) error
 
 type ValidateErrorNode struct {
@@ -34,14 +37,17 @@ type ValidateError struct {
 
 type ValidateErrors []*ValidateError
 
+// Constructor for ValidateErrorNode
 func NewValidateErrorNode(code string, errorMessage string) *ValidateErrorNode {
 	return &ValidateErrorNode{Code: code, ErrorMessage: errorMessage}
 }
 
+// Constructor for ValidateErrorNodes
 func NewValidateErrorNodes(validateErrorNode ...*ValidateErrorNode) *ValidateErrorNodes {
 	return (*ValidateErrorNodes)(&validateErrorNode)
 }
 
+// Constructor for ValidateError
 func NewValidateError(fieldName string, validateErrorNodes *ValidateErrorNodes) *ValidateError {
 	return &ValidateError{FieldName: fieldName, ValidateErrorNodes: validateErrorNodes}
 }
