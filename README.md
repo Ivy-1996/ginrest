@@ -1,39 +1,96 @@
-## ginrest
+# ginrest
 
+> ginrest is simple, helpful , Customizable, realize your idea with it!
 
-## Getting started
+[Document](./docs/docs.md)
+
+## Limitation
+```shell script
+golang version >= 1.11
+```
+
+## Installation
+
+####  `go get`
+
 ```shell
 go get github.com/Ivy-1996/ginrest
 ```
 
-## A Simple Example
+#### `go mod`
+
+```shell 
+require github.com/Ivy-1996/ginrest latest
+```
+
+
+
+## Example
+
+#### Use with `gin`
 
 ```go
 package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ivy-1996/ginrest"
-	"github.com/ivy-1996/ginrest/view"
+	"net/http"
 )
 
-type View struct {
-	view.RestView
+func getUserList(context *gin.Context) {
+	context.JSON(http.StatusOK, gin.H{"result": "userList"})
 }
 
-func (*View) Get(ctx *gin.Context) {
-	ctx.JSON(200, gin.H{"method": ctx.Request.Method})
-}
-
-func (*View) Post(ctx *gin.Context) {
-	ctx.JSON(200, gin.H{"method": ctx.Request.Method})
+func createUser(context *gin.Context) {
+	context.JSON(http.StatusCreated, gin.H{"status": "ok"})
 }
 
 func main() {
+
 	server := gin.Default()
-	server.Any("/", ginrest.AsDefaultHandleFunc(new(View)))
+
+	server.GET("/user/", getUserList)
+
+	server.POST("/user/", createUser)
+
 	server.Run()
 }
 
 ```
+
+
+
+#### Use with `ginrest`
+
+```GO
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/ivy-1996/ginrest"
+	"github.com/ivy-1996/ginrest/view"
+	"net/http"
+)
+
+type User struct {
+	view.RestView
+}
+
+func (*User) Get(context *gin.Context) {
+	context.JSON(http.StatusOK, gin.H{"result": "userList"})
+}
+
+func (*User) Post(context *gin.Context) {
+	context.JSON(http.StatusCreated, gin.H{"status": "ok"})
+}
+
+func main() {
+	server := gin.Default()
+	server.Any("/user/", ginrest.AsDefaultHandleFunc(new(User)))
+	server.Run()
+}
+```
+
+
+
 

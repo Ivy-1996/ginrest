@@ -27,3 +27,4 @@ func NewRouter(engine *gin.Engine, middleware ...gin.HandlerFunc) *router.Router
 	return router.NewRouter(engine, middleware...)
 }
 
+const author = "github.com/ivy-1996"
