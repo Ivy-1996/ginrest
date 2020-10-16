@@ -4,8 +4,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ivy-1996/ginrest/http"
 	"github.com/ivy-1996/ginrest/view"
+	"strings"
 )
 
+const pathPrefix = "/"
 
 type Router struct {
 	engine              *gin.Engine
@@ -13,6 +15,13 @@ type Router struct {
 	middleWare          []gin.HandlerFunc
 	group               *gin.RouterGroup
 	relativePath        string
+	autoPrefix          bool
+}
+
+// Set AutoPrefix with this method
+// Call it before Register otherwise it won't be worked
+func (r *Router) SetAutoPrefix(autoPrefix bool) {
+	r.autoPrefix = autoPrefix
 }
 
 // Constructor of Router
@@ -39,6 +48,19 @@ func (r *Router) prepare() {
 	}
 }
 
+// Get final path from this function
+// Your can call SetAutoPrefix to change the result
+func (r *Router) formatPath(path string) string {
+	if r.autoPrefix {
+		if strings.HasPrefix(path, pathPrefix) {
+			return path
+		} else {
+			return pathPrefix + path
+		}
+	}
+	return path
+}
+
 // Register RestViewer to gin.Engine
 func (r *Router) Register(path string, v view.RestViewer, middleware ...gin.HandlerFunc) {
 
@@ -47,6 +69,10 @@ func (r *Router) Register(path string, v view.RestViewer, middleware ...gin.Hand
 
 	// private middleware use
 	handlers := append(middleware, http.AsHandlerFunc(v, r.restViewHandlerFunc))
+
+	// Get formatPath
+	// Call SetAutoPrefix to change value
+	path = r.formatPath(path)
 
 	// register done
 	r.group.Any(path, handlers...)
