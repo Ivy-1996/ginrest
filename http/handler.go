@@ -16,8 +16,6 @@ func handleError(r view.RestViewer, ctx *gin.Context) {
 func AsHandlerFunc(r view.RestViewer, restHandlerFunc view.RestViewHandlerFunc) gin.HandlerFunc {
 
 	// Get reflect view value
-	// It will finish before this application start
-	// Don't care about consuming too much performance
 	value := reflect.ValueOf(r)
 
 	return func(ctx *gin.Context) {
